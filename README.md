@@ -1,7 +1,5 @@
 # umamusume-localify-android
-Android port of [umamusume-localify](https://github.com/GEEKiDoS/umamusume-localify)
-
-[한국어](README.ko-KR.md)
+<<闪耀优俊少女>> and Android port of [umamusume-localify](https://github.com/GEEKiDoS/umamusume-localify)
 
 ## How to use
 1. Install [Magisk](https://github.com/topjohnwu/Magisk) v24 or later and enable Zygisk
