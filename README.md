@@ -1,4 +1,25 @@
+<p align="center">
+  <!-- GitHub Downloads -->
+  <a href="https://github.com/mikumifa/umamusume-localify-android-zh/releases">
+    <img src="https://img.shields.io/github/downloads/mikumifa/umamusume-localify-android-zh/total" alt="GitHub all releases">
+  </a>
+  <!-- GitHub Release Version -->
+  <a href="https://github.com/mikumifa/umamusume-localify-android-zh/releases">
+    <img src="https://img.shields.io/github/v/release/mikumifa/umamusume-localify-android-zh" alt="GitHub release (with filter)">
+  </a>
+  <!-- GitHub Issues -->
+  <a href="https://github.com/mikumifa/umamusume-localify-android-zh/issues">
+    <img src="https://img.shields.io/github/issues/mikumifa/umamusume-localify-android-zh" alt="GitHub issues">
+  </a>
+  <!-- GitHub Stars -->
+  <a href="https://github.com/mikumifa/umamusume-localify-android-zh/stargazers">
+    <img src="https://img.shields.io/github/stars/mikumifa/umamusume-localify-android-zh" alt="GitHub Repo stars">
+  </a>
+</p>
+
 # umamusume-localify-android
+
+
 <<闪耀优俊少女>> and Android port of [umamusume-localify](https://github.com/GEEKiDoS/umamusume-localify)
 
 ## How to use
