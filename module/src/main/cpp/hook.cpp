@@ -46,12 +46,15 @@ bool g_use_third_party_news = false;
 
 string text_id_dict;
 
-bool isGame(const char *pkgNm) {
+bool isGame(const char *pkgNm)
+{
     if (!pkgNm)
         return false;
     if (Game::IsPackageNameEqualsByGameRegion(pkgNm, Game::Region::JAP) ||
         Game::IsPackageNameEqualsByGameRegion(pkgNm, Game::Region::KOR) ||
-        Game::IsPackageNameEqualsByGameRegion(pkgNm, Game::Region::TWN)) {
+        Game::IsPackageNameEqualsByGameRegion(pkgNm, Game::Region::TWN) ||
+        Game::IsPackageNameEqualsByGameRegion(pkgNm, Game::Region::CHN))
+    {
         LOGI("detect package: %s", pkgNm);
         return true;
     }
@@ -76,17 +79,20 @@ bool isGame(const char *pkgNm) {
 
 optional<vector<string>> read_config();
 
-HOOK_DEF(bool, il2cpp_init, const char *domain_name) {
+HOOK_DEF(bool, il2cpp_init, const char *domain_name)
+{
     const bool result = orig_il2cpp_init(domain_name);
 
     auto dict = read_config();
 
     logger::init_logger();
     il2cpp_hook_init(il2cpp_handle);
-    if (dict.has_value()) {
+    if (dict.has_value())
+    {
         localify::load_textdb(get_application_version(), &dict.value());
     }
-    if (!text_id_dict.empty()) {
+    if (!text_id_dict.empty())
+    {
         localify::load_textId_textdb(text_id_dict);
     }
     il2cpp_hook();
@@ -96,25 +102,26 @@ HOOK_DEF(bool, il2cpp_init, const char *domain_name) {
 
 bool isCriWareInit = false;
 
-enum class ProcessStatus {
+enum class ProcessStatus
+{
     INIT,
     DONE,
     NONE,
 };
 
-ProcessStatus dlopen_process(const char *name, void *handle) {
-    if (!il2cpp_handle) {
-        if (name != nullptr && strstr(name, "libil2cpp.so")) {
+ProcessStatus dlopen_process(const char *name, void *handle)
+{
+    if (!il2cpp_handle)
+    {
+        if (name != nullptr && strstr(name, "libil2cpp.so"))
+        {
             il2cpp_handle = handle;
             LOGI("Got il2cpp handle!");
-            addr_il2cpp_init = dlsym(il2cpp_handle, "il2cpp_init");
-            DobbyHook(addr_il2cpp_init,
-                      reinterpret_cast<void *>(new_il2cpp_init),
-                      reinterpret_cast<void **>(&orig_il2cpp_init));
             return ProcessStatus::INIT;
         }
     }
-    if (name != nullptr && strstr(name, "libcri_ware_unity.so") && !isCriWareInit) {
+    if (name != nullptr && strstr(name, "libcri_ware_unity.so") && !isCriWareInit)
+    {
         isCriWareInit = true;
         il2cpp_load_assetbundle();
         return ProcessStatus::DONE;
@@ -128,41 +135,51 @@ ProcessStatus dlopen_process(const char *name, void *handle) {
     return ProcessStatus::NONE;
 }
 
-HOOK_DEF(void*, do_dlopen, const char *name, int flags) {
+HOOK_DEF(void *, do_dlopen, const char *name, int flags)
+{
     void *handle = orig_do_dlopen(name, flags);
-    if (dlopen_process(name, handle) == ProcessStatus::DONE) {
+    if (dlopen_process(name, handle) == ProcessStatus::DONE)
+    {
         DobbyDestroy(addr_do_dlopen);
     }
     return handle;
 }
 
-HOOK_DEF(void*, __loader_dlopen, const char *filename, int flags, const void *caller_addr) {
+HOOK_DEF(void *, __loader_dlopen, const char *filename, int flags, const void *caller_addr)
+{
     void *handle = orig___loader_dlopen(filename, flags, caller_addr);
-    if (dlopen_process(filename, handle) == ProcessStatus::DONE) {
+    if (dlopen_process(filename, handle) == ProcessStatus::DONE)
+    {
         DobbyDestroy(addr___loader_dlopen);
     }
     return handle;
 }
 
-HOOK_DEF(void*, do_dlopen_V24, const char *name, int flags, const void *extinfo [[maybe_unused]],
-         void *caller_addr) {
+HOOK_DEF(void *, do_dlopen_V24, const char *name, int flags, const void *extinfo [[maybe_unused]],
+         void *caller_addr)
+{
     void *handle = orig_do_dlopen_V24(name, flags, extinfo, caller_addr);
-    if (dlopen_process(name, handle) == ProcessStatus::DONE) {
+    if (dlopen_process(name, handle) == ProcessStatus::DONE)
+    {
         DobbyDestroy(addr_do_dlopen_V24);
     }
     return handle;
 }
 
-HOOK_DEF(void*, do_dlopen_V19, const char *name, int flags, const void *extinfo [[maybe_unused]]) {
+HOOK_DEF(void *, do_dlopen_V19, const char *name, int flags, const void *extinfo [[maybe_unused]])
+{
     void *handle = orig_do_dlopen_V19(name, flags, extinfo);
-    if (dlopen_process(name, handle) == ProcessStatus::DONE) {
+    if (dlopen_process(name, handle) == ProcessStatus::DONE)
+    {
         DobbyDestroy(addr_do_dlopen_V19);
     }
     return handle;
 }
 
-HOOK_DEF(void*, NativeBridgeLoadLibrary_V21, const char *filename, int flag) {
-    if (string(filename).find(string("libmain.so")) != string::npos) {
+HOOK_DEF(void *, NativeBridgeLoadLibrary_V21, const char *filename, int flag)
+{
+    if (string(filename).find(string("libmain.so")) != string::npos)
+    {
         auto *NativeBridgeError = reinterpret_cast<bool (*)()>(DobbySymbolResolver(nullptr,
                                                                                    "_ZN7android17NativeBridgeErrorEv"));
 
@@ -173,21 +190,25 @@ HOOK_DEF(void*, NativeBridgeLoadLibrary_V21, const char *filename, int flag) {
 
         string path;
 
-        if (access(path_armV8.str().data(), F_OK) != -1) {
+        if (access(path_armV8.str().data(), F_OK) != -1)
+        {
             path = path_armV8.str();
-        } else if (access(path_armV7.str().data(), F_OK) != -1) {
+        }
+        else if (access(path_armV7.str().data(), F_OK) != -1)
+        {
             path = path_armV7.str();
         }
 
-        if (!path.empty()) {
-            thread load_thread([path, NativeBridgeError]() {
+        if (!path.empty())
+        {
+            thread load_thread([path, NativeBridgeError]()
+                               {
                 void *lib = orig_NativeBridgeLoadLibrary_V21(path.data(), RTLD_NOW);
                 LOGI("%s: %p", path.data(), lib);
                 if (NativeBridgeError()) {
                     LOGW("LoadLibrary failed");
                 }
-                DobbyDestroy(addr_NativeBridgeLoadLibrary_V21);
-            });
+                DobbyDestroy(addr_NativeBridgeLoadLibrary_V21); });
             load_thread.detach();
         }
     }
@@ -195,9 +216,11 @@ HOOK_DEF(void*, NativeBridgeLoadLibrary_V21, const char *filename, int flag) {
     return orig_NativeBridgeLoadLibrary_V21(filename, flag);
 }
 
-HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V26, const char *filename, int flag,
-         struct native_bridge_namespace_t *ns) {
-    if (string(filename).find(string("libmain.so")) != string::npos) {
+HOOK_DEF(void *, NativeBridgeLoadLibraryExt_V26, const char *filename, int flag,
+         struct native_bridge_namespace_t *ns)
+{
+    if (string(filename).find(string("libmain.so")) != string::npos)
+    {
         auto *NativeBridgeError = reinterpret_cast<bool (*)()>(DobbySymbolResolver(nullptr,
                                                                                    "_ZN7android17NativeBridgeErrorEv"));
         auto *NativeBridgeGetError = reinterpret_cast<char *(*)()>(DobbySymbolResolver(nullptr,
@@ -210,14 +233,19 @@ HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V26, const char *filename, int flag,
 
         string path;
 
-        if (access(path_armV8.str().data(), F_OK) != -1) {
+        if (access(path_armV8.str().data(), F_OK) != -1)
+        {
             path = path_armV8.str();
-        } else if (access(path_armV7.str().data(), F_OK) != -1) {
+        }
+        else if (access(path_armV7.str().data(), F_OK) != -1)
+        {
             path = path_armV7.str();
         }
 
-        if (!path.empty()) {
-            thread load_thread([path, ns, NativeBridgeError, NativeBridgeGetError]() {
+        if (!path.empty())
+        {
+            thread load_thread([path, ns, NativeBridgeError, NativeBridgeGetError]()
+                               {
                 void *lib = orig_NativeBridgeLoadLibraryExt_V26(path.data(), RTLD_NOW, ns);
                 LOGI("%s: %p", path.data(), lib);
                 if (NativeBridgeError()) {
@@ -226,8 +254,7 @@ HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V26, const char *filename, int flag,
                         LOGW("error_bridge: %s", error_bridge);
                     }
                 }
-                DobbyDestroy(addr_NativeBridgeLoadLibraryExt_V26);
-            });
+                DobbyDestroy(addr_NativeBridgeLoadLibraryExt_V26); });
             load_thread.detach();
         }
     }
@@ -235,9 +262,11 @@ HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V26, const char *filename, int flag,
     return orig_NativeBridgeLoadLibraryExt_V26(filename, flag, ns);
 }
 
-HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V30, const char *filename, int flag,
-         struct native_bridge_namespace_t *ns) {
-    if (string(filename).find(string("libmain.so")) != string::npos) {
+HOOK_DEF(void *, NativeBridgeLoadLibraryExt_V30, const char *filename, int flag,
+         struct native_bridge_namespace_t *ns)
+{
+    if (string(filename).find(string("libmain.so")) != string::npos)
+    {
         auto *NativeBridgeError = reinterpret_cast<bool (*)()>(DobbySymbolResolver(nullptr,
                                                                                    "NativeBridgeError"));
         auto *NativeBridgeGetError = reinterpret_cast<char *(*)()>(DobbySymbolResolver(nullptr,
@@ -250,14 +279,19 @@ HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V30, const char *filename, int flag,
 
         string path;
 
-        if (access(path_armV8.str().data(), F_OK) != -1) {
+        if (access(path_armV8.str().data(), F_OK) != -1)
+        {
             path = path_armV8.str();
-        } else if (access(path_armV7.str().data(), F_OK) != -1) {
+        }
+        else if (access(path_armV7.str().data(), F_OK) != -1)
+        {
             path = path_armV7.str();
         }
 
-        if (!path.empty()) {
-            thread load_thread([path, ns, NativeBridgeError, NativeBridgeGetError]() {
+        if (!path.empty())
+        {
+            thread load_thread([path, ns, NativeBridgeError, NativeBridgeGetError]()
+                               {
                 void *lib = orig_NativeBridgeLoadLibraryExt_V30(path.data(), RTLD_NOW, ns);
                 LOGI("%s: %p", path.data(), lib);
                 if (NativeBridgeError()) {
@@ -267,8 +301,7 @@ HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V30, const char *filename, int flag,
                         LOGW("error_bridge: %s", error_bridge);
                     }
                 }
-                DobbyDestroy(addr_NativeBridgeLoadLibraryExt_V30);
-            });
+                DobbyDestroy(addr_NativeBridgeLoadLibraryExt_V30); });
             load_thread.detach();
         }
     }
@@ -276,13 +309,14 @@ HOOK_DEF(void*, NativeBridgeLoadLibraryExt_V30, const char *filename, int flag,
     return orig_NativeBridgeLoadLibraryExt_V30(filename, flag, ns);
 }
 
-optional<vector<string>> read_config() {
+optional<vector<string>> read_config()
+{
     ifstream config_stream{
-            string("/sdcard/Android/data/").append(Game::GetCurrentPackageName()).append(
-                    "/config.json")};
+        string("/sdcard/Android/data/").append(Game::GetCurrentPackageName()).append("/config.json")};
     vector<string> dicts{};
 
-    if (!config_stream.is_open()) {
+    if (!config_stream.is_open())
+    {
         LOGW("config.json not loaded.");
         return nullopt;
     }
@@ -294,92 +328,120 @@ optional<vector<string>> read_config() {
 
     document.ParseStream(wrapper);
 
-    if (!document.HasParseError()) {
-        if (document.HasMember("enableLogger")) {
+    if (!document.HasParseError())
+    {
+        if (document.HasMember("enableLogger"))
+        {
             g_enable_logger = document["enableLogger"].GetBool();
         }
-        if (document.HasMember("dumpStaticEntries")) {
+        if (document.HasMember("dumpStaticEntries"))
+        {
             g_dump_entries = document["dumpStaticEntries"].GetBool();
         }
-        if (document.HasMember("dumpDbEntries")) {
+        if (document.HasMember("dumpDbEntries"))
+        {
             g_dump_db_entries = document["dumpDbEntries"].GetBool();
         }
-        if (document.HasMember("staticEntriesUseHash")) {
+        if (document.HasMember("staticEntriesUseHash"))
+        {
             g_static_entries_use_hash = document["staticEntriesUseHash"].GetBool();
         }
-        if (document.HasMember("staticEntriesUseTextIdName")) {
+        if (document.HasMember("staticEntriesUseTextIdName"))
+        {
             g_static_entries_use_text_id_name = document["staticEntriesUseTextIdName"].GetBool();
         }
-        if (document.HasMember("maxFps")) {
+        if (document.HasMember("maxFps"))
+        {
             g_max_fps = document["maxFps"].GetInt();
         }
-        if (document.HasMember("uiAnimationScale")) {
+        if (document.HasMember("uiAnimationScale"))
+        {
             g_ui_animation_scale = document["uiAnimationScale"].GetFloat();
         }
-        if (document.HasMember("uiUseSystemResolution")) {
+        if (document.HasMember("uiUseSystemResolution"))
+        {
             g_ui_use_system_resolution = document["uiUseSystemResolution"].GetBool();
         }
-        if (document.HasMember("resolution3dScale")) {
+        if (document.HasMember("resolution3dScale"))
+        {
             g_resolution_3d_scale = document["resolution3dScale"].GetFloat();
         }
-        if (document.HasMember("replaceFont")) {
+        if (document.HasMember("replaceFont"))
+        {
             g_replace_to_builtin_font = document["replaceFont"].GetBool();
         }
-        if (!document.HasMember("replaceFont") && document.HasMember("replaceToBuiltinFont")) {
+        if (!document.HasMember("replaceFont") && document.HasMember("replaceToBuiltinFont"))
+        {
             g_replace_to_builtin_font = document["replaceToBuiltinFont"].GetBool();
         }
-        if (document.HasMember("replaceToCustomFont")) {
+        if (document.HasMember("replaceToCustomFont"))
+        {
             g_replace_to_custom_font = document["replaceToCustomFont"].GetBool();
         }
-        if (document.HasMember("fontAssetBundlePath")) {
+        if (document.HasMember("fontAssetBundlePath"))
+        {
             g_font_assetbundle_path = string(document["fontAssetBundlePath"].GetString());
         }
-        if (document.HasMember("fontAssetName")) {
+        if (document.HasMember("fontAssetName"))
+        {
             g_font_asset_name = string(document["fontAssetName"].GetString());
         }
-        if (document.HasMember("tmproFontAssetName")) {
+        if (document.HasMember("tmproFontAssetName"))
+        {
             g_tmpro_font_asset_name = string(document["tmproFontAssetName"].GetString());
         }
-        if (document.HasMember("graphicsQuality")) {
+        if (document.HasMember("graphicsQuality"))
+        {
             g_graphics_quality = document["graphicsQuality"].GetInt();
-            if (g_graphics_quality < -1) {
+            if (g_graphics_quality < -1)
+            {
                 g_graphics_quality = -1;
             }
-            if (g_graphics_quality > 4) {
+            if (g_graphics_quality > 4)
+            {
                 g_graphics_quality = 3;
             }
         }
-        if (document.HasMember("antiAliasing")) {
+        if (document.HasMember("antiAliasing"))
+        {
             g_anti_aliasing = document["antiAliasing"].GetInt();
             vector<int> options = {0, 2, 4, 8, -1};
             g_anti_aliasing =
-                    find(options.begin(), options.end(), g_anti_aliasing) - options.begin();
+                find(options.begin(), options.end(), g_anti_aliasing) - options.begin();
         }
-        if (document.HasMember("forceLandscape")) {
+        if (document.HasMember("forceLandscape"))
+        {
             g_force_landscape = document["forceLandscape"].GetBool();
         }
-        if (document.HasMember("forceLandscapeUiScale")) {
+        if (document.HasMember("forceLandscapeUiScale"))
+        {
             g_force_landscape_ui_scale = document["forceLandscapeUiScale"].GetFloat();
-            if (g_force_landscape_ui_scale <= 0) {
+            if (g_force_landscape_ui_scale <= 0)
+            {
                 g_force_landscape_ui_scale = 1;
             }
         }
-        if (document.HasMember("uiLoadingShowOrientationGuide")) {
+        if (document.HasMember("uiLoadingShowOrientationGuide"))
+        {
             g_ui_loading_show_orientation_guide = document["uiLoadingShowOrientationGuide"].GetBool();
         }
         /*if (document.HasMember("restoreNotification")) {
             g_restore_notification = document["restoreNotification"].GetBool();
         }*/
-        if (document.HasMember("replaceAssetsPath")) {
+        if (document.HasMember("replaceAssetsPath"))
+        {
             auto replaceAssetsPath = localify::u8_u16(document["replaceAssetsPath"].GetString());
-            if (!replaceAssetsPath.starts_with(u"/")) {
-                replaceAssetsPath.insert(0, u16string(u"/sdcard/Android/data/").append(
-                        localify::u8_u16(Game::GetCurrentPackageName())).append(u"/"));
+            if (!replaceAssetsPath.starts_with(u"/"))
+            {
+                replaceAssetsPath.insert(0, u16string(u"/sdcard/Android/data/").append(localify::u8_u16(Game::GetCurrentPackageName())).append(u"/"));
             }
             if (filesystem::exists(replaceAssetsPath) &&
-                filesystem::is_directory(replaceAssetsPath)) {
-                for (auto &file: filesystem::directory_iterator(replaceAssetsPath)) {
-                    if (file.is_regular_file()) {
+                filesystem::is_directory(replaceAssetsPath))
+            {
+                for (auto &file : filesystem::directory_iterator(replaceAssetsPath))
+                {
+                    if (file.is_regular_file())
+                    {
                         g_replace_assets.emplace(file.path().filename().string(),
                                                  ReplaceAsset{file.path().string(), nullptr});
                     }
@@ -387,15 +449,17 @@ optional<vector<string>> read_config() {
             }
         }
 
-        if (document.HasMember("replaceAssetBundleFilePath")) {
+        if (document.HasMember("replaceAssetBundleFilePath"))
+        {
             auto replaceAssetBundleFilePath = localify::u8_u16(
-                    document["replaceAssetBundleFilePath"].GetString());
-            if (!replaceAssetBundleFilePath.starts_with(u"/")) {
-                replaceAssetBundleFilePath.insert(0, u16string(u"/sdcard/Android/data/").append(
-                        localify::u8_u16(Game::GetCurrentPackageName())).append(u"/"));
+                document["replaceAssetBundleFilePath"].GetString());
+            if (!replaceAssetBundleFilePath.starts_with(u"/"))
+            {
+                replaceAssetBundleFilePath.insert(0, u16string(u"/sdcard/Android/data/").append(localify::u8_u16(Game::GetCurrentPackageName())).append(u"/"));
             }
             if (filesystem::exists(replaceAssetBundleFilePath) &&
-                filesystem::is_regular_file(replaceAssetBundleFilePath)) {
+                filesystem::is_regular_file(replaceAssetBundleFilePath))
+            {
                 g_replace_assetbundle_file_path = localify::u16_u8(replaceAssetBundleFilePath);
             }
         }
@@ -414,55 +478,69 @@ optional<vector<string>> read_config() {
             }
         }*/
 
-        if (document.HasMember("characterSystemTextCaption")) {
+        if (document.HasMember("characterSystemTextCaption"))
+        {
             g_character_system_text_caption = document["characterSystemTextCaption"].GetBool();
         }
 
-        if (document.HasMember("cySpringUpdateMode")) {
+        if (document.HasMember("cySpringUpdateMode"))
+        {
             g_cyspring_update_mode = document["cySpringUpdateMode"].GetInt();
             vector<int> options = {0, 1, 2, 3, -1};
             g_cyspring_update_mode =
-                    find(options.begin(), options.end(), g_cyspring_update_mode) - options.begin();
-        } else if (g_max_fps > 30) {
+                find(options.begin(), options.end(), g_cyspring_update_mode) - options.begin();
+        }
+        else if (g_max_fps > 30)
+        {
             g_cyspring_update_mode = 1;
         }
 
-        if (document.HasMember("hideNowLoading")) {
+        if (document.HasMember("hideNowLoading"))
+        {
             g_hide_now_loading = document["hideNowLoading"].GetBool();
         }
 
-        if (document.HasMember("textIdDict")) {
+        if (document.HasMember("textIdDict"))
+        {
             text_id_dict = document["textIdDict"].GetString();
         }
 
-        if (document.HasMember("dicts")) {
+        if (document.HasMember("dicts"))
+        {
             auto &dicts_arr = document["dicts"];
             auto len = dicts_arr.Size();
 
-            for (size_t i = 0; i < len; ++i) {
+            for (size_t i = 0; i < len; ++i)
+            {
                 auto dict = dicts_arr[i].GetString();
 
                 dicts.emplace_back(dict);
             }
         }
 
-        if (document.HasMember("dumpMsgPack")) {
+        if (document.HasMember("dumpMsgPack"))
+        {
             g_dump_msgpack = document["dumpMsgPack"].GetBool();
         }
 
-        if (document.HasMember("dumpMsgPackRequest")) {
+        if (document.HasMember("dumpMsgPackRequest"))
+        {
             g_dump_msgpack_request = document["dumpMsgPackRequest"].GetBool();
         }
 
-        if (document.HasMember("packetNotifier")) {
+        if (document.HasMember("packetNotifier"))
+        {
             g_packet_notifier = document["packetNotifier"].GetString();
         }
 
-        if (Game::currentGameRegion == Game::Region::KOR) {
-            if (document.HasMember("restoreGallopWebview")) {
+        if (Game::currentGameRegion == Game::Region::KOR)
+        {
+            if (document.HasMember("restoreGallopWebview"))
+            {
                 g_restore_gallop_webview = document["restoreGallopWebview"].GetBool();
             }
-            if (document.HasMember("useThirdPartyNews")) {
+            if (document.HasMember("useThirdPartyNews"))
+            {
                 g_use_third_party_news = document["useThirdPartyNews"].GetBool();
             }
         }
@@ -472,14 +550,17 @@ optional<vector<string>> read_config() {
     return dicts;
 }
 
-void *GetNativeBridgeLoadLibrary(void *fallbackAddress) {
+void *GetNativeBridgeLoadLibrary(void *fallbackAddress)
+{
     void *handle = dlopen(GetNativeBridgeLibrary().data(), RTLD_NOW);
     // clear error
     dlerror();
-    if (handle) {
+    if (handle)
+    {
         auto itf = reinterpret_cast<NativeBridgeCallbacks *>(dlsym(handle, "NativeBridgeItf"));
         LOGI("NativeBridgeItf version: %d", itf->version);
-        if (GetAndroidApiLevel() >= 26) {
+        if (GetAndroidApiLevel() >= 26)
+        {
             return reinterpret_cast<void *>(itf->loadLibraryExt);
         }
         return reinterpret_cast<void *>(itf->loadLibrary);
@@ -604,11 +685,27 @@ void hack_thread(void *arg [[maybe_unused]]) {
             }
         }
     }
-    /*if (IsABIRequiredNativeBridge()) {
+    if (IsABIRequiredNativeBridge()) {
         return;
-    }*/
-}
+    }
+    while (!il2cpp_handle) {
+        sleep(1);
+    }
+    // prevent crash
+    sleep(1);
 
+    auto dict = read_config();
+
+    logger::init_logger();
+    il2cpp_hook_init(il2cpp_handle);
+    if (dict.has_value()) {
+        localify::load_textdb(get_application_version(), &dict.value());
+    }
+    if (!text_id_dict.empty()) {
+        localify::load_textId_textdb(text_id_dict);
+    }
+    il2cpp_hook();
+}
 /*void hack_settings_thread(void *arg [[maybe_unused]]) {
     const int api_level = GetAndroidApiLevel();
     LOGI("%s api level: %d", ABI, api_level);
