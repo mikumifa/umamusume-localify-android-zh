@@ -4862,14 +4862,19 @@ void hookMethods()
 
     if (g_dump_msgpack)
     {
-        if(Game::currentGameRegion == Game::Region::TWN or Game::currentGameRegion == Game::Region::CHN) {
+        if(Game::currentGameRegion == Game::Region::TWN) {
             auto DecompressResponse_BUMA_addr = il2cpp_symbols::get_method_pointer(
                     "umamusume.dll", "Gallop",
                     "HttpHelper", "DecompressResponse_BUMA", 1
             );
             ADD_HOOK(DecompressResponse_BUMA);
-        }
-        else if(Game::currentGameRegion == Game::Region::JAP) {
+        }else if(Game::currentGameRegion == Game::Region::CHN) {
+            auto DecompressResponse_BUMA_addr = il2cpp_symbols::get_method_pointer(
+                    "umamusume.dll", "Gallop",
+                    "HttpHelper", "DecompressResponse", 1
+            );
+            ADD_HOOK(DecompressResponse_BUMA);
+        } else if(Game::currentGameRegion == Game::Region::JAP) {
             auto LZ4_decompress_safe_ext_addr = il2cpp_symbols::get_method_pointer(
                     "LibNative.Runtime.dll", "LibNative.LZ4",
                     "Plugin", "LZ4_decompress_safe_ext", 4
@@ -4877,7 +4882,6 @@ void hookMethods()
             ADD_HOOK(LZ4_decompress_safe_ext);
         }
     }
-
     LOGI("Unity Version: %s", GetUnityVersion().data());
 }
 
